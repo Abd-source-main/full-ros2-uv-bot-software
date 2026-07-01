@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(:)",
+      "Read(//home/eng-abd/ros2_ws/**)",
+      "Bash(colcon build *)",
+      "Bash(rm -f /home/eng-abd/ros2_ws/install/the_robot/lib/python3.10/site-packages/scripts/__init__.py)",
+      "Bash(rmdir /home/eng-abd/ros2_ws/install/the_robot/lib/python3.10/site-packages/scripts)",
+      "Bash(pkill -9 -f gzserver)",
+      "Bash(pkill -9 -f gzclient)",
+      "Bash(pkill -9 -f 'gazebo')"
+    ]
+  }
+}

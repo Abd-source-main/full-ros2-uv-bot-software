@@ -1,0 +1,19 @@
+{
+    "ROS2.distro": "humble",
+    "python.autoComplete.extraPaths": [
+        "/home/eng-abd/ros2_ws/install/turtlesim/local/lib/python3.10/dist-packages",
+        "/home/eng-abd/ros2_ws/install/the_robot/lib/python3.10/site-packages",
+        "/home/eng-abd/ros2_ws/install/hospital_robot_spawner/lib/python3.10/site-packages",
+        "/home/eng-abd/ros2_ws/install/custom_teleop/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/eng-abd/ros2_ws/install/turtlesim/local/lib/python3.10/dist-packages",
+        "/home/eng-abd/ros2_ws/install/the_robot/lib/python3.10/site-packages",
+        "/home/eng-abd/ros2_ws/install/hospital_robot_spawner/lib/python3.10/site-packages",
+        "/home/eng-abd/ros2_ws/install/custom_teleop/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}
