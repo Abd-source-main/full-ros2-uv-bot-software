@@ -35,7 +35,7 @@
        + wiringPi). Only required when launching with use_ultrasonic:=true. It is
        intentionally NOT a hard <exec_depend> so the_robot still builds on a
        laptop / in sim where wiringPi is unavailable. Build it explicitly on the
-       Pi:  colcon build --packages-select lib_hcsr04_ros the_robot -->
+       Pi:  colcon build (packages-select lib_hcsr04_ros the_robot) -->
   <!-- <exec_depend>lib_hcsr04_ros</exec_depend> -->
 
 
