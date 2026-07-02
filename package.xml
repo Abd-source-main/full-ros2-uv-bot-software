@@ -9,6 +9,9 @@
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
   <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>turtlebot3_gazebo</exec_depend>
   <exec_depend>turtlebot3_description</exec_depend>
@@ -19,9 +22,22 @@
   <exec_depend>turtlebot3_navigation2</exec_depend>
   <exec_depend>slam_toolbox</exec_depend>
   <exec_depend>nav2_map_server</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>subprocess</exec_depend>
-  
+
+  <!-- motor_driver GPIO backend: real robot only (Raspberry Pi). Import happens
+       at runtime, so the_robot still builds on a laptop/sim without it.
+       Install on the Pi:  sudo apt install python3-gpiozero python3-lgpio -->
+  <exec_depend>python3-gpiozero</exec_depend>
+
+  <!-- HC-SR04 ultrasonic driver: OPTIONAL, real robot only (needs a Raspberry Pi
+       + wiringPi). Only required when launching with use_ultrasonic:=true. It is
+       intentionally NOT a hard <exec_depend> so the_robot still builds on a
+       laptop / in sim where wiringPi is unavailable. Build it explicitly on the
+       Pi:  colcon build --packages-select lib_hcsr04_ros the_robot -->
+  <!-- <exec_depend>lib_hcsr04_ros</exec_depend> -->
+
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

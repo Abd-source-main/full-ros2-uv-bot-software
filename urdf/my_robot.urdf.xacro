@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<!--
+  Minimal differential-drive robot description for the REAL robot (not a Waffle).
+
+  It defines the exact frame names the rest of the stack expects
+  (base_footprint -> base_link -> base_scan + wheels), so nothing downstream
+  changes. You only need to put in YOUR robot's real measurements below.
+
+  Process/preview it with:
+      xacro urdf/my_robot.urdf.xacro
+  It is loaded by robot_bringup.launch.py when urdf:=my_robot (see that file).
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_robot">
+
+  <!-- =====================================================================
+       MEASURE THESE ON YOUR ROBOT (metres). Everything the navigation stack
+       knows about your robot's shape and sensor placement comes from here.
+
+       Layout assumed (differential drive): two motor-driven wheels on a shared
+       axle + one passive caster wheel at the FRONT. The origin base_link sits
+       at the MIDPOINT OF THE DRIVE-WHEEL AXLE (the robot's centre of rotation),
+       and the body extends forward toward the caster via body_x_offset.
+       ===================================================================== -->
+  <xacro:property name="base_length"      value="0.215"/>  
+  <xacro:property name="base_width"       value="0.10"/>  
+  <xacro:property name="base_height"      value="0.045"/>  
+  <xacro:property name="ground_clearance" value="0.045"/>  
+  <xacro:property name="wheel_radius"     value="0.03"/>
+  <xacro:property name="wheel_width"      value="0.025"/>
+  <xacro:property name="wheel_separation" value="0.13"/>  
+  <!-- How far FORWARD the body centre is from the drive axle. If the drive
+       wheels are at the rear and the body reaches forward to the caster, this
+       is roughly base_length/2 minus the axle-to-back distance. -->
+  <xacro:property name="body_x_offset"    value="0.035"/>
+  <!-- Front caster: forward distance from the drive axle to the caster contact,
+       and its radius. Keep caster_radius = wheel_radius to sit level. -->
+  <xacro:property name="caster_x"         value="0.13"/>
+  <xacro:property name="caster_radius"    value="0.03"/>
+  <xacro:property name="scan_x"           value="0.0"/>   <!-- sensor forward offset from axle -->
+  <xacro:property name="scan_z"           value="0.15"/>  <!-- sensor height above base_link -->
+  <!-- ===================================================================== -->
+
+  <xacro:property name="body_z" value="${ground_clearance + base_height/2}"/>
+
+  <material name="grey"><color rgba="0.4 0.4 0.4 1"/></material>
+  <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+
+  <!-- Root frame: on the ground, directly below the DRIVE-WHEEL AXLE (the centre
+       of rotation). The odom -> base_footprint transform (from wheel_odometry)
+       attaches here. -->
+  <link name="base_footprint"/>
+
+  <!-- Robot body. base_link is at the drive axle; the box is shifted forward by
+       body_x_offset so the physical chassis reaches toward the front caster.
+       The box is the collision shape Nav2's costmap uses. -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="${body_x_offset} 0 0" rpy="0 0 0"/>
+      <geometry><box size="${base_length} ${base_width} ${base_height}"/></geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <origin xyz="${body_x_offset} 0 0" rpy="0 0 0"/>
+      <geometry><box size="${base_length} ${base_width} ${base_height}"/></geometry>
+    </collision>
+  </link>
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${body_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Passive front caster (support wheel). Not driven, not used for odometry;
+       included so TF/RViz and the footprint reflect the real robot. -->
+  <link name="caster_front">
+    <visual>
+      <geometry><sphere radius="${caster_radius}"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="${caster_radius}"/></geometry>
+    </collision>
+  </link>
+  <joint name="caster_front_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_front"/>
+    <origin xyz="${caster_x} 0 ${caster_radius - body_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Drive wheels. FIXED joints: they are visual reference only, so no
+       joint_state_publisher is needed. Odometry uses the launch params, not
+       these frames. Make them 'continuous' + add a joint_state_publisher only
+       if you want the wheels to spin in RViz. -->
+  <xacro:macro name="wheel" params="name y">
+    <link name="${name}">
+      <visual>
+        <origin rpy="${pi/2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="black"/>
+      </visual>
+    </link>
+    <joint name="${name}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${name}"/>
+      <origin xyz="0 ${y} ${wheel_radius - body_z}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+  <xacro:wheel name="wheel_left"  y="${ wheel_separation/2}"/>
+  <xacro:wheel name="wheel_right" y="${-wheel_separation/2}"/>
+
+  <!-- Primary forward sensor mount. Named base_scan to match the stack's LiDAR
+       frame; if you only have the HC-SR04, point the ultrasonic driver's
+       frame_id here (or rename this to ultrasonic_link). -->
+  <link name="base_scan"/>
+  <joint name="scan_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_scan"/>
+    <origin xyz="${scan_x} 0 ${scan_z}" rpy="0 0 0"/>
+  </joint>
+
+</robot>
