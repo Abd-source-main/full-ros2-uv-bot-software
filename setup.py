@@ -34,6 +34,7 @@ setup(
             'teleop_wasd = the_robot.teleop_wasd:main',
             'web_goal = the_robot.web_goal:main',
             'wheel_odometry = the_robot.wheel_odometry:main',
+            'motor_driver = the_robot.motor_driver:main',
         ],
     },
 )
