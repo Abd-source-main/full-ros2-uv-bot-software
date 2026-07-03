@@ -52,17 +52,6 @@ class MotorDriver(Node):
         self.declare_parameter('invert_right', False)
         self.declare_parameter('cmd_timeout', 0.5)        # s, stop if no cmd_vel
 
-        # --- PWM tuning (this is what kills the stutter) ---------------------
-        # gpiozero defaults to 100 Hz software PWM. At low duty a geared DC motor
-        # can't run smoothly on 100 Hz -- it lurches on each pulse and stalls in
-        # between (the "powered then disconnected" cycle). ~1 kHz looks like an
-        # almost-continuous voltage to the motor, so it runs smoothly.
-        self.declare_parameter('pwm_frequency', 1000)     # Hz, PWM carrier
-        # DC motors won't turn below a stiction threshold. Map any non-zero
-        # command onto [min_duty, 1.0] so slow commands still move instead of
-        # buzzing in place. Set to 0.0 to disable (raw linear mapping).
-        self.declare_parameter('min_duty', 0.35)          # 0..1 duty to break stiction
-
         lf = self.get_parameter('left_forward_pin').value
         lb = self.get_parameter('left_backward_pin').value
         rf = self.get_parameter('right_forward_pin').value
