@@ -52,6 +52,17 @@ class MotorDriver(Node):
         self.declare_parameter('invert_right', False)
         self.declare_parameter('cmd_timeout', 0.5)        # s, stop if no cmd_vel
 
+        # --- PWM tuning (this is what kills the stutter) ---------------------
+        # gpiozero defaults to 100 Hz software PWM. At low duty a geared DC motor
+        # can't run smoothly on 100 Hz -- it lurches on each pulse and stalls in
+        # between (the "powered then disconnected" cycle). ~1 kHz looks like an
+        # almost-continuous voltage to the motor, so it runs smoothly.
+        self.declare_parameter('pwm_frequency', 1000)     # Hz, PWM carrier
+        # DC motors won't turn below a stiction threshold. Map any non-zero
+        # command onto [min_duty, 1.0] so slow commands still move instead of
+        # buzzing in place. Set to 0.0 to disable (raw linear mapping).
+        self.declare_parameter('min_duty', 0.35)          # 0..1 duty to break stiction
+
         lf = self.get_parameter('left_forward_pin').value
         lb = self.get_parameter('left_backward_pin').value
         rf = self.get_parameter('right_forward_pin').value
@@ -62,10 +73,19 @@ class MotorDriver(Node):
         self.inv_left = self.get_parameter('invert_left').value
         self.inv_right = self.get_parameter('invert_right').value
         self.cmd_timeout = self.get_parameter('cmd_timeout').value
+        self.pwm_frequency = self.get_parameter('pwm_frequency').value
+        self.min_duty = self.get_parameter('min_duty').value
 
         # gpiozero.Motor(forward, backward) does the PWM + direction for us.
         self.left = Motor(forward=lf, backward=lb, pwm=True)
         self.right = Motor(forward=rf, backward=rb, pwm=True)
+        self._set_pwm_frequency(self.left)
+        self._set_pwm_frequency(self.right)
+
+        # Remember the last duty written per motor so we don't re-arm the PWM
+        # with an identical value on every 20 Hz message (each rewrite can glitch
+        # the output). Only actual changes are pushed to the hardware.
+        self._last_duty = {}
 
         self.last_cmd_t = self.get_clock().now()
         self.create_subscription(Twist, 'cmd_vel', self.on_cmd, 10)
@@ -87,24 +107,54 @@ class MotorDriver(Node):
         self._drive(self.left, v_left, self.inv_left)
         self._drive(self.right, v_right, self.inv_right)
 
+    def _set_pwm_frequency(self, motor):
+        """Raise the PWM carrier frequency on both direction pins of a motor.
+
+        gpiozero exposes the underlying PWMOutputDevice as forward_device /
+        backward_device when pwm=True. Guarded so a non-PWM build or an API
+        change just leaves the default frequency instead of crashing.
+        """
+        for attr in ('forward_device', 'backward_device'):
+            dev = getattr(motor, attr, None)
+            if dev is not None and hasattr(dev, 'frequency'):
+                try:
+                    dev.frequency = self.pwm_frequency
+                except Exception as exc:  # noqa: BLE001
+                    self.get_logger().warn(f'could not set PWM frequency: {exc}')
+
     def _drive(self, motor, wheel_speed, invert):
         """Set a motor to a -1..1 duty cycle from a wheel speed in m/s."""
         duty = wheel_speed / self.max_speed if self.max_speed > 0.0 else 0.0
         duty = max(-1.0, min(1.0, duty))
         if invert:
             duty = -duty
+
+        # Stiction compensation: remap non-zero |duty| from (0,1] onto
+        # [min_duty, 1] so even the slowest command produces enough torque to
+        # turn the wheel instead of buzzing/stalling in place.
+        if self.min_duty > 0.0 and duty != 0.0:
+            mag = self.min_duty + (1.0 - self.min_duty) * abs(duty)
+            duty = mag if duty > 0.0 else -mag
+
+        # Only write when the value actually changes -- re-arming gpiozero's PWM
+        # with an identical duty on every 20 Hz tick can glitch the output.
+        if self._last_duty.get(id(motor)) == duty:
+            return
+        self._last_duty[id(motor)] = duty
         motor.value = duty  # gpiozero: >0 forward PWM, <0 backward PWM, 0 coast
 
     def on_watchdog(self):
         """Stop the motors if /cmd_vel has gone stale (teleop closed, etc.)."""
         age = (self.get_clock().now() - self.last_cmd_t).nanoseconds / 1e9
         if age > self.cmd_timeout:
-            self.left.stop()
-            self.right.stop()
+            self.stop()
 
     def stop(self):
         self.left.stop()
         self.right.stop()
+        # Forget the cached duties so the next real command is always written.
+        self._last_duty[id(self.left)] = 0.0
+        self._last_duty[id(self.right)] = 0.0
 
 
 def main(args=None):
