@@ -33,6 +33,7 @@ setup(
             'slam = the_robot.slam:main',
             'spawn_robot = the_robot.spawn_robot:main',
             'teleop_wasd = the_robot.teleop_wasd:main',
+            'ultrasonic_hcsr04 = the_robot.ultrasonic_hcsr04:main',
             'web_goal = the_robot.web_goal:main',
             'web_teleop = the_robot.web_teleop:main',
             'wheel_odometry = the_robot.wheel_odometry:main',

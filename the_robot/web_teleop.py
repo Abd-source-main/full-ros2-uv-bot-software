@@ -25,8 +25,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import OccupancyGrid
-from PIL import Image
 from rclpy.node import Node
+
+# Pillow is only needed to render the live SLAM map. On a bare robot (joystick
+# driving, no SLAM) it may not be installed -- keep it optional so the driving
+# server still comes up. Without it, map rendering is simply disabled.
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 from rclpy.qos import (
     QoSDurabilityPolicy,
     QoSHistoryPolicy,
@@ -122,6 +129,8 @@ class WebTeleop(Node):
 
     def map_png(self):
         """Render the latest OccupancyGrid to PNG bytes, or None if no map yet."""
+        if Image is None:          # Pillow not installed -> map rendering disabled
+            return None
         msg = self.latest_map
         if msg is None:
             return None

@@ -41,10 +41,11 @@ def generate_launch_description():
     clear_distance = ParameterValue(LaunchConfiguration('clear_distance'), value_type=float)
 
     return LaunchDescription([
-        # HC-SR04 wiring (BCM numbering) -- forwarded to ultrasonic.launch.py,
+        # HC-SR04 wiring (BCM/GPIO numbering) -- forwarded to ultrasonic.launch.py,
         # which owns the sensor's default pins/range.
-        DeclareLaunchArgument('trigger_pin', default_value='36'),
-        DeclareLaunchArgument('echo_pin', default_value='33'),
+        # TRIG=GPIO16 (physical pin 36), ECHO=GPIO13 (physical pin 33).
+        DeclareLaunchArgument('trigger_pin', default_value='16'),
+        DeclareLaunchArgument('echo_pin', default_value='13'),
         # Guard thresholds (metres). clear_distance must be > stop_distance.
         DeclareLaunchArgument('stop_distance', default_value='0.25'),
         DeclareLaunchArgument('clear_distance', default_value='0.35'),
