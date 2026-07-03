@@ -265,7 +265,7 @@ def generate_launch_description():
     )
 
     declare_use_sim_time = DeclareLaunchArgument(
-        'use_sim_time', default_value='false',
+        'use_sim_time', default_value='true',
         description='Use simulation (Gazebo) clock if true.',
     )
     declare_map = DeclareLaunchArgument(

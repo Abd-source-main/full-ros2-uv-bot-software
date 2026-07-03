@@ -25,6 +25,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'collision_guard = the_robot.collision_guard:main',
             'motor_driver = the_robot.motor_driver:main',
             'nav2_goal = the_robot.nav2_goal:main',
             'run_gazebo = the_robot.run_gazebo:main',
@@ -33,6 +34,7 @@ setup(
             'spawn_robot = the_robot.spawn_robot:main',
             'teleop_wasd = the_robot.teleop_wasd:main',
             'web_goal = the_robot.web_goal:main',
+            'web_teleop = the_robot.web_teleop:main',
             'wheel_odometry = the_robot.wheel_odometry:main',
         ],
     },

@@ -1,0 +1,22 @@
+[Unit]
+Description=the_robot ROS 2 base (HC-SR04 collision guard + motor driver)
+# Wait for the network stack; DDS discovery wants it up.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eng-abd
+# Access to /dev/gpiomem etc. for the L298N + HC-SR04. 'gpio' covers gpiozero;
+# add 'dialout' if you also talk to a serial device.
+SupplementaryGroups=gpio dialout
+ExecStart=/home/eng-abd/ros2_ws/src/the_robot/scripts/start_robot.sh
+# If a node crashes, bring the whole base back up after a short pause.
+Restart=on-failure
+RestartSec=3
+# Send stdout/stderr to the journal (view with: journalctl -u the_robot).
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
