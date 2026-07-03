@@ -29,8 +29,6 @@ Wiring it in: remap the motor driver's input to the guarded topic, e.g.
 (the provided guarded_base.launch.py does this for you).
 """
 
-from collections import deque
-
 import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.executors import ExternalShutdownException
@@ -57,14 +55,6 @@ class CollisionGuard(Node):
         self.declare_parameter('range_timeout', 1.0)   # s, treat sensor as dead
         self.declare_parameter('stop_on_sensor_timeout', True)
 
-        # --- range filtering -------------------------------------------------
-        # HC-SR04 sensors emit occasional spurious readings (missed echoes,
-        # crosstalk). Median-filter the last N samples so a single bad reading
-        # can't flip the block and chop up forward motion. Also drop readings
-        # below min_valid_range as noise rather than a very-close obstacle.
-        self.declare_parameter('range_filter_size', 5)   # median window length
-        self.declare_parameter('min_valid_range', 0.02)  # m, below = noise
-
         # --- topics ----------------------------------------------------------
         self.declare_parameter('range_topic', '/HCSR04_ultrasonic/distance')
 
@@ -73,8 +63,6 @@ class CollisionGuard(Node):
         self.cmd_timeout = self.get_parameter('cmd_timeout').value
         self.range_timeout = self.get_parameter('range_timeout').value
         self.stop_on_timeout = self.get_parameter('stop_on_sensor_timeout').value
-        self.min_valid_range = self.get_parameter('min_valid_range').value
-        filter_size = max(1, int(self.get_parameter('range_filter_size').value))
         range_topic = self.get_parameter('range_topic').value
         rate = self.get_parameter('publish_rate').value
 
@@ -85,9 +73,8 @@ class CollisionGuard(Node):
 
         self.last_cmd = Twist()
         self.last_cmd_t = None      # None => no command received yet
-        self.last_range = None      # median-filtered range, None => no valid data
+        self.last_range = None
         self.last_range_t = None
-        self.range_window = deque(maxlen=filter_size)
         self.blocked = False        # latched state for hysteresis
 
         self.pub = self.create_publisher(Twist, 'cmd_vel_safe', 10)
@@ -108,27 +95,8 @@ class CollisionGuard(Node):
         self.last_cmd_t = self.get_clock().now()
 
     def on_range(self, msg):
-        # Timestamp every message so the staleness watchdog tracks the sensor
-        # node being alive, independent of whether this sample was usable.
+        self.last_range = msg.range
         self.last_range_t = self.get_clock().now()
-        # Keep only physically-plausible readings; a missed echo (0.0) or sub-
-        # minimum noise spike is not a real obstacle, so it must not enter the
-        # filter and drag the median below the stop threshold.
-        if msg.range >= self.min_valid_range:
-            self.range_window.append(msg.range)
-        self.last_range = self._median(self.range_window)
-
-    @staticmethod
-    def _median(values):
-        """Median of the window, or None if empty (no valid readings yet)."""
-        if not values:
-            return None
-        ordered = sorted(values)
-        n = len(ordered)
-        mid = n // 2
-        if n % 2:
-            return ordered[mid]
-        return 0.5 * (ordered[mid - 1] + ordered[mid])
 
     def _age(self, t):
         """Seconds since timestamp `t`; large number if never set."""
