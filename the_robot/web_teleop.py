@@ -198,7 +198,7 @@ INDEX_HTML = """<!doctype html>
 <body>
 <header>
   <h1>Drive &amp; Map</h1>
-  <p>Drag the joystick (or use W / A / S / D) to drive. The map builds as you go &mdash; it is saved on exit.</p>
+  <p>Drag the joystick (or use W / A / S / D or the arrow keys) to drive. The map builds as you go &mdash; it is saved on exit.</p>
 </header>
 <main>
   <div class="mapwrap"><img id="map" alt="SLAM map (waiting for /map)…"></div>
@@ -305,15 +305,23 @@ function fullStop() {
 document.getElementById('stop').addEventListener('click', fullStop);
 
 // --- keyboard ---
+// Arrow keys are aliased to W/A/S/D so both drive identically.
+const ARROWS = { arrowup: 'w', arrowdown: 's', arrowleft: 'a', arrowright: 'd' };
 const KEYSET = new Set(['w', 'a', 's', 'd']);
-window.addEventListener('keydown', (e) => {
+function normKey(e) {
   const k = e.key.toLowerCase();
+  return ARROWS[k] || k;
+}
+window.addEventListener('keydown', (e) => {
+  const k = normKey(e);
   if (k === ' ') { e.preventDefault(); fullStop(); return; }
-  if (!KEYSET.has(k) || e.repeat) return;
+  if (!KEYSET.has(k)) return;
+  e.preventDefault();   // stop arrow keys from scrolling the page
+  if (e.repeat) return;
   keys.add(k); send();
 });
 window.addEventListener('keyup', (e) => {
-  const k = e.key.toLowerCase();
+  const k = normKey(e);
   if (KEYSET.has(k)) { keys.delete(k); send(); }
 });
 window.addEventListener('blur', fullStop);
